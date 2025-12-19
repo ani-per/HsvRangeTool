@@ -52,6 +52,10 @@ class MainWindow(QMainWindow):
         self.previewS = self.findChild(QLabel, "previewS")
         self.previewV = self.findChild(QLabel, "previewV")
 
+        self.btnResetH = self.findChild(QPushButton, "btnResetH")
+        self.btnResetS = self.findChild(QPushButton, "btnResetS")
+        self.btnResetV = self.findChild(QPushButton, "btnResetV")
+
         self.previewRaw = self.findChild(QLabel, "previewRaw")
         self.previewMask = self.findChild(QLabel, "previewMask")
         self.previewMaskedRaw = self.findChild(QLabel, "previewMaskedRaw")
@@ -75,15 +79,20 @@ class MainWindow(QMainWindow):
 
     def loadHsvSpace(self):
         self.imgHsvSpace = cv2.imread(os.path.join(os.path.dirname(__file__), "assets", "hsv_color.png"))
-        
+
     def init_handler(self):
         self.resized.connect(self.onWindowsSizeChange)
 
         self.sliderH.sliderMoved.connect(self.onHChanged)
         self.sliderS.sliderMoved.connect(self.onSChanged)
         self.sliderV.sliderMoved.connect(self.onVChanged)
+
         self.btnOpen.clicked.connect(self.onBtnOpenClicked)
         self.btnCopy.clicked.connect(self.onBtnCopyClicked)
+
+        self.btnResetH.clicked.connect(self.onBtnResetHClicked)
+        self.btnResetS.clicked.connect(self.onBtnResetSClicked)
+        self.btnResetV.clicked.connect(self.onBtnResetVClicked)
 
         self.cboxHInverse.stateChanged.connect(self.onCBoxHInverseChanged)
         self.cboxDilate.stateChanged.connect(self.updateMask)
@@ -106,13 +115,11 @@ class MainWindow(QMainWindow):
             ## collect H from upperHSV ~ 255
             lower_orange[0] = self.upperHSV[0]
             upper_orange[0] = 255
-            threshold_upper = cv2.inRange(
-                frame_HSV, lower_orange, upper_orange)
+            threshold_upper = cv2.inRange(frame_HSV, lower_orange, upper_orange)
 
             frame_threshold = cv2.bitwise_or(threshold_lower, threshold_upper)
         else:
-            frame_threshold = cv2.inRange(
-                frame_HSV, lower_orange, upper_orange)
+            frame_threshold = cv2.inRange(frame_HSV, lower_orange, upper_orange)
 
         return frame_threshold
 
@@ -123,7 +130,7 @@ class MainWindow(QMainWindow):
         # label.setPixmap(QPixmap.fromImage(_asQImage).scaledToWidth(label.size().width()))
 
     def updatePreviewHsvSpace(self):
-        ## update the rainbow image on the lower left 
+        ## update the rainbow image on the lower left
         if self.imgHsvSpace is None:
             return
 
@@ -152,9 +159,9 @@ class MainWindow(QMainWindow):
             f"H {self.upperHSV[0]}; S {self.upperHSV[1]}; V {self.upperHSV[2]}")
         self.lblLower.setText(
             f"H {self.lowerHSV[0]}; S {self.lowerHSV[1]}; V {self.lowerHSV[2]}")
-        
+
         self.updateMask()
-        self.updatePreviewHsvSpace() ## update the rainbow image on the lower left 
+        self.updatePreviewHsvSpace() ## update the rainbow image on the lower left
 
     def updateRawImg(self, img):
         self.imgRaw = img
@@ -175,7 +182,7 @@ class MainWindow(QMainWindow):
         if self.cboxErode.isChecked():
             _kernel = self.sliderErotion.value()
             frame_threshold = cv2.erode(frame_threshold, np.ones((_kernel, _kernel), dtype=np.uint8))
-        
+
         if self.cboxDilate.isChecked():
             _kernel = self.sliderDilation.value()
             frame_threshold = cv2.dilate(frame_threshold, np.ones((_kernel, _kernel), dtype=np.uint8))
@@ -242,6 +249,30 @@ class MainWindow(QMainWindow):
     def onSliderDilateChanged(self):
         self.cboxDilate.setText(f"Dilate {self.sliderDilation.value()}")
         self.updateMask()
+
+    def onBtnResetHClicked(self):
+        self.lowerHSV[0] = 0
+        self.upperHSV[0] = 179
+        self.lblH.setText("(0,179)")
+        self.sliderH.setLow(0)
+        self.sliderH.setHigh(179)
+        self.updateHSVPreview()
+
+    def onBtnResetSClicked(self):
+        self.lowerHSV[1] = 0
+        self.upperHSV[1] = 255
+        self.lblS.setText("(0,255)")
+        self.sliderS.setLow(0)
+        self.sliderS.setHigh(255)
+        self.updateHSVPreview()
+
+    def onBtnResetVClicked(self):
+        self.lowerHSV[2] = 0
+        self.upperHSV[2] = 255
+        self.lblV.setText("(0,255)")
+        self.sliderV.setLow(0)
+        self.sliderV.setHigh(255)
+        self.updateHSVPreview()
 
     def onBtnOpenClicked(self):
         options = QFileDialog.Options()
